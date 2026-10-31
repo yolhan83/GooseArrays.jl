@@ -188,7 +188,10 @@ function refresh_file(path, ids, tables; check=false)
         length(left) == 2 || error("Marker not found in $path: $opening")
         right = split(left[2], closing; limit=2)
         length(right) == 2 || error("Marker not found in $path: $closing")
-        updated = left[1] * opening * "\n" * tables[id] * "\n" * closing * right[2]
+        prefix = replace(left[1], r"\n+$" => "")
+        suffix = replace(right[2], r"^\n+" => "")
+        updated = string(prefix, "\n\n", opening, "\n\n",
+                         tables[id], "\n\n", closing, "\n\n", suffix)
     end
     if check
         existing == updated || error("Out-of-date benchmark tables: $path. Run julia benchmark/update_tables.jl")
@@ -201,7 +204,33 @@ function refresh_file(path, ids, tables; check=false)
     end
 end
 
+# Reformat the existing tables without reading CSV files or changing measurements.
+function existing_tables(path, ids)
+    content = read(path, String)
+    tables = Dict{String,String}()
+    for id in ids
+        opening = "<!-- BEGIN GENERATED BENCHMARK: $id -->"
+        closing = "<!-- END GENERATED BENCHMARK: $id -->"
+        left = split(content, opening; limit=2)
+        length(left) == 2 || error("Marker not found in $path: $opening")
+        right = split(left[2], closing; limit=2)
+        length(right) == 2 || error("Marker not found in $path: $closing")
+        tables[id] = strip(right[1])
+    end
+    return tables
+end
+
 function main(args)
+    if args == ["--format-only"]
+        readme_path = joinpath(ROOT, "README.md")
+        docs_path = joinpath(ROOT, "docs", "src", "performance.md")
+        readme_ids = ["readme"]
+        docs_ids = ["vectors", "matrices", "multi-input", "matvec", "additional",
+                    "svector", "specialization"]
+        refresh_file(readme_path, readme_ids, existing_tables(readme_path, readme_ids))
+        refresh_file(docs_path, docs_ids, existing_tables(docs_path, docs_ids))
+        return
+    end
     source = REFERENCE
     check = false
     i = 1

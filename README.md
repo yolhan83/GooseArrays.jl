@@ -38,6 +38,7 @@ Goose arrays, leaving the scope. Arena initialization is excluded. `—` means
 **not measured**.
 
 <!-- BEGIN GENERATED BENCHMARK: readme -->
+
 | n | Operation | Vector | FixedSizeArray | GooseVector | StaticGooseVector | MVector |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: |
 | 4 | `sum(map(f,x))` | 8.5 / 96 | 6.9 / 64 | 14.3 / 0 | 14.0 / 0 | 1.8 / 0 |
@@ -46,6 +47,7 @@ Goose arrays, leaving the scope. Arena initialization is excluded. `—` means
 | 10,000 | `sum(map(f,x))` | 2175.9 / 81984 | 2129.6 / 81952 | 1541.7 / 0 | 1525.0 / 0 | — |
 | 64 | `mapreduce(abs2,+,x)` | 6.9 / 0 | 6.9 / 0 | 7.2 / 0 | 6.3 / 0 | 8.5 / 0 |
 | 1,000 | `sum(f.(x))` | 182.1 / 8256 | 182.2 / 8224 | 147.1 / 0 | 144.2 / 0 | 589.6 / 0 |
+
 <!-- END GENERATED BENCHMARK: readme -->
 
 **Zero GC bytes does not mean zero arena bytes.** Performance depends on the

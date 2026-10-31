@@ -23,6 +23,7 @@ materialize an intermediate result. Out-of-place operations are followed by
 arrays, this includes entering and leaving the scope.
 
 <!-- BEGIN GENERATED BENCHMARK: vectors -->
+
 | Size | Operation | Vector | FixedSizeVector | GooseVector | StaticGooseVector | MVector |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: |
 | 2 | in-place map! | 2.4 / 0 | 2.4 / 0 | 2.9 / 0 | 2.8 / 0 | 1.5 / 0 |
@@ -102,6 +103,7 @@ arrays, this includes entering and leaving the scope.
 | 100000 | in-place broadcast | 11542.0 / 0 | 11000.0 / 0 | 11500.0 / 0 | 11333.0 / 0 | — |
 | 100000 | broadcast then sum | 20583.0 / 802880 | 20542.0 / 802848 | 19250.0 / 0 | 19250.0 / 0 | — |
 | 100000 | 2 .* b .+ 1 then sum | 20916.5 / 802880 | 20541.0 / 802848 | 19209.0 / 0 | 19375.0 / 0 | — |
+
 <!-- END GENERATED BENCHMARK: vectors -->
 
 ### Matrix multiplication
@@ -111,6 +113,7 @@ and then summing includes allocation and consumption of the result. `MMatrix`
 is only measured up to 16×16.
 
 <!-- BEGIN GENERATED BENCHMARK: matrices -->
+
 | Size | Operation | Matrix | FixedSizeMatrix | GooseMatrix | StaticGooseMatrix | MMatrix |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: |
 | 2×2 | in-place mul! | 12.3 / 0 | 17.0 / 0 | 9.2 / 0 | 5.4 / 0 | — |
@@ -127,6 +130,7 @@ is only measured up to 16×16.
 | 64×64 | multiply then sum | 20958.0 / 32848 | 19417.0 / 32800 | 19333.0 / 0 | 19209.0 / 0 | — |
 | 256×256 | in-place mul! | 632583.0 / 0 | 634875.0 / 0 | 634187.5 / 0 | 634291.0 / 0 | — |
 | 256×256 | multiply then sum | 648083.0 / 524368 | 638833.5 / 524320 | 643542.0 / 0 | 639021.0 / 0 | — |
+
 <!-- END GENERATED BENCHMARK: matrices -->
 
 Additional operations, construction allocations, `SVector` / `SMatrix`, and
@@ -144,6 +148,7 @@ are released. `axpy!` uses α=0.25; `axpby!` uses α=0.25 and β=0.5. All 410
 additional cases use the same kernels at each stage.
 
 <!-- BEGIN GENERATED BENCHMARK: multi-input -->
+
 | Size | Operation | Vector | FixedSizeVector | GooseVector | StaticGooseVector | MVector |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: |
 | 2 | two-input map! | 4.1 / 0 | 2.6 / 0 | 3.0 / 0 | 2.8 / 0 | 3.5 / 0 |
@@ -218,6 +223,7 @@ additional cases use the same kernels at each stage.
 | 100000 | three-input mapreduce | 33354.5 / 802880 | 33208.0 / 802880 | 19333.0 / 0 | 19209.0 / 0 | — |
 | 100000 | axpy! | 14500.0 / 0 | 14666.0 / 0 | 14459.0 / 0 | 14459.0 / 0 | — |
 | 100000 | axpby! | 15292.0 / 0 | 15291.0 / 0 | 14834.0 / 0 | 15417.0 / 0 | — |
+
 <!-- END GENERATED BENCHMARK: multi-input -->
 
 ### Matrix–vector products
@@ -227,6 +233,7 @@ output; multiplication followed by summation includes allocation and
 consumption of the result, as in the matrix–matrix benchmarks.
 
 <!-- BEGIN GENERATED BENCHMARK: matvec -->
+
 | Size | Operation | Matrix × Vector | FixedSizeMatrix × FixedSizeVector | GooseMatrix × GooseVector | StaticGooseMatrix × StaticGooseVector | MMatrix × MVector |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: |
 | 2×2 | matrix–vector mul! | 19.7 / 0 | 18.9 / 0 | 6.2 / 0 | 4.2 / 0 | 5.3 / 0 |
@@ -243,6 +250,7 @@ consumption of the result, as in the matrix–matrix benchmarks.
 | 64×64 | multiply then sum | 584.8 / 576 | 589.1 / 544 | 493.4 / 0 | 466.8 / 0 | — |
 | 256×256 | matrix–vector mul! | 7700.0 / 0 | 7687.5 / 0 | 7698.0 / 0 | 7700.0 / 0 | — |
 | 256×256 | multiply then sum | 7770.9 / 2112 | 7885.5 / 2080 | 7750.0 / 0 | 7739.5 / 0 | — |
+
 <!-- END GENERATED BENCHMARK: matvec -->
 
 ## Exact benchmark environment
@@ -288,6 +296,7 @@ computation fills the array with 2 and then reduces it. This workload can be
 optimized substantially when the array length is known.
 
 <!-- BEGIN GENERATED BENCHMARK: additional -->
+
 | Size | Operation | Vector | FixedSizeVector | GooseVector | StaticGooseVector | MVector |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: |
 | 2 | escaping construction | 6.8 / 80 | 7.5 / 80 | 7.3 / 64 | 9.3 / 48 | 3.4 / 32 |
@@ -389,6 +398,7 @@ optimized substantially when the array length is known.
 | 100000 | dot | 11584.0 / 0 | 11542.0 / 0 | 11583.0 / 0 | 11584.0 / 0 | — |
 | 100000 | affine loop | 11375.0 / 0 | 11000.0 / 0 | 11375.0 / 0 | 11417.0 / 0 | — |
 | 100000 | in-place broadcast expression | 11542.0 / 0 | 11042.0 / 0 | 11500.0 / 0 | 11583.0 / 0 | — |
+
 <!-- END GENERATED BENCHMARK: additional -->
 
 Construction inside a non-escaping scope is measured separately in the CSV for
@@ -399,6 +409,7 @@ does not mean zero memory usage: for these `Float64` arrays, elements occupy
 ## Immutable StaticArrays reference results
 
 <!-- BEGIN GENERATED BENCHMARK: svector -->
+
 | n | SVector sum | SVector abs2 reduction | SVector map then sum | SVector broadcast then sum |
 | ---: | ---: | ---: | ---: | ---: |
 | 2 | 1.1 / 0 | 1.5 / 0 | 1.5 / 0 | 1.5 / 0 |
@@ -410,6 +421,7 @@ does not mean zero memory usage: for these `Float64` arrays, elements occupy
 | 64 | 6.0 / 0 | 9.3 / 0 | 12.5 / 0 | 12.5 / 0 |
 | 100 | 11.0 / 0 | 17.3 / 0 | 23.6 / 0 | 23.6 / 0 |
 | 1000 | 378.3 / 0 | 401.0 / 0 | 589.1 / 0 | 589.1 / 0 |
+
 <!-- END GENERATED BENCHMARK: svector -->
 
 `SMatrix` multiplication followed by summation is also available in the CSV
@@ -424,6 +436,7 @@ do not constitute a full startup benchmark. Counts refer to `MethodInstance`
 objects, not an exhaustive inventory of `CodeInstance` objects.
 
 <!-- BEGIN GENERATED BENCHMARK: specialization -->
+
 | Family | Shapes tested | Concrete types | Final kernel instances | Cumulative kernel compilation (ms) |
 | ---: | ---: | ---: | ---: | ---: |
 | Array | 11 | 1 | 1 | 4.080 |
@@ -432,6 +445,7 @@ objects, not an exhaustive inventory of `CodeInstance` objects.
 | StaticGooseArray | 11 | 11 | 11 | 73.773 |
 | MVector | 9 | 9 | 9 | 54.738 |
 | SVector | 9 | 9 | 9 | 25.656 |
+
 <!-- END GENERATED BENCHMARK: specialization -->
 
 `GooseArray` retains a single concrete type across all tested lengths.
