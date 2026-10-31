@@ -1,6 +1,6 @@
 name = "GooseArrays"
 uuid = "da16e47e-db36-4e0b-92a5-16ad695ee88d"
-version = "0.1.1"
+version = "0.1.0"
 
 [compat]
 julia = "1.10"
