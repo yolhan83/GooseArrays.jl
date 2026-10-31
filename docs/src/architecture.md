@@ -1,168 +1,170 @@
 # Architecture
 
-## Représentation
+## Representation
 
-`DataStack` est un objet mutable créé une fois. Il possède le mapping anonyme,
-son curseur en octets, sa capacité, la tâche propriétaire, le niveau actif et un
-vecteur d'objets `_ScopeState` préalloués. Ce vecteur contient uniquement les métadonnées
-des portées, jamais les données des tableaux. La pile utilise un niveau racine
-et au plus `max_scopes` niveaux imbriqués.
+`DataStack` is a mutable object created once. It owns an anonymous memory
+mapping, a byte cursor, a capacity, the owning task, the active scope depth, and
+a preallocated vector of `_ScopeState` objects. This vector holds only scope
+metadata, never array elements. Each arena has a root scope and supports up to
+`max_scopes` nested levels.
 
-`GooseArray{T,N}` est un descripteur immutable : référence au propriétaire,
-`Ptr{T}`, `NTuple{N,Int}` de dimensions, longueur, référence à `_ScopeState` et génération.
-La taille et les adresses sont des champs, pas des paramètres de type.
-La référence au propriétaire empêche une finalisation prématurée. Elle empêche
-aussi de garantir que tout descripteur échappant sera alloué sans GC.
+`GooseArray{T,N}` is an immutable descriptor containing a reference to its
+owner, a `Ptr{T}`, an `NTuple{N,Int}` of dimensions, a length, a reference to a
+`_ScopeState`, and a generation identifier. Lengths and addresses are fields,
+not type parameters. Keeping a reference to the owner prevents premature
+finalization; it also means that escaping descriptors cannot be guaranteed to
+avoid GC allocation.
 
-`StaticGooseArray{T,N,S}` garde seulement le propriétaire, le pointeur, l'état de
-portée et la génération. S est un type tuple tel que Tuple{2,3}, sans champ de
-dimensions ou de longueur. Le descripteur mesure ici 32 octets, contre 48 pour
-GooseVector{Float64}. Les deux sous-typent AbstractGooseArray{T,N}, lui-même dense,
-et partagent leurs méthodes d'accès et de sécurité. Le type statique n'est pas
-isbits et son stockage reste mmap. Chaque forme peut spécialiser les consommateurs.
+`StaticGooseArray{T,N,S}` stores only the owner, pointer, scope state, and
+generation. Here `S` is a tuple type such as `Tuple{2,3}`; there is no separate
+dimensions or length field. Its descriptor is 32 bytes, compared with 48 bytes
+for `GooseVector{Float64}`. Both types subtype `AbstractGooseArray{T,N}`, itself
+a dense array, and share indexing and safety methods. The static type is not
+`isbits`; its elements still live in `mmap` storage. Different shapes can cause
+consumer functions to specialize.
 
-Les formes explicites sont validées avant allocation. Les copies et similar sans
-nouvelles dimensions conservent S ; les dimensions ordinaires explicites rendent
-un GooseArray. Val(tuple) demande une forme statique, tandis que le Val(rang)
-interne à Base conserve sa sémantique de reshape par rang pour les vues.
-Les conversions sans copie conservent l'état de portée du stockage original.
+Explicit shapes are validated before allocation. `copy` and `similar` without
+new dimensions preserve `S`; explicitly provided ordinary dimensions produce
+a `GooseArray`. `Val(tuple)` requests a static shape, while Base's internal
+`Val(rank)` retains its rank-based reshape semantics for views. Zero-copy
+conversions preserve the original storage scope state.
 
-Le broadcasting possède un style statique qui compose les formes et les
-dimensions singleton. Le mélange avec des formes dynamiques revient au style
-dynamique. L'extension LinearAlgebra construit directement un résultat statique
-pour les produits de deux matrices statiques ou matrice–vecteur statiques, puis
-appelle mul!. Les produits réels de dimensions 1 à 4 ont une boucle native courte ;
-les tailles supérieures utilisent BLAS. Un dot réel court utilise une réduction SIMD,
-et un dot réel de plus de 2 048 éléments utilise BLAS.
+Broadcasting has a static style that combines shapes and singleton dimensions.
+Mixing static and dynamic shapes falls back to the dynamic style. The
+`LinearAlgebra` extension directly constructs static results for static
+matrix–matrix and matrix–vector products, then calls `mul!`. Real-valued matrix
+products with dimensions from 1 to 4 use a short native loop; larger sizes use
+BLAS. Short real-valued `dot` products use SIMD reduction; those with more than
+2,048 elements use BLAS.
 
-L'allocation vérifie le type, le produit des dimensions sans débordement,
-l'alignement réel de l'adresse et la capacité. Le curseur n'avance qu'après
-validation. Les éléments sont contigus et stockés dans l'ordre colonne Julia.
-L'alignement utilise `Base.datatype_alignment`, interface interne Julia à
-surveiller lors des changements de version.
+Allocation validates the element type, checks the dimension product for
+overflow, verifies actual address alignment, and checks available capacity. The
+cursor advances only after validation. Elements are contiguous in Julia's
+column-major order. Alignment relies on `Base.datatype_alignment`, an internal
+Julia interface that should be monitored across Julia versions.
 
-## Portées et invalidation
+## Scopes and invalidation
 
-À l'entrée d'une portée, on conserve le curseur, active un emplacement de
-génération et lui attribue un identifiant monotone. Chaque tableau retient cet
-état de portée et cet identifiant. À la sortie, l'emplacement est invalidé et le curseur
-restauré dans un `finally`. Les tableaux des niveaux extérieurs restent valides.
-Une portée suivante au même niveau reçoit un identifiant différent : une vieille
-référence ne redevient pas valide lorsque son adresse est réutilisée. La référence
-directe à `_ScopeState` évite de rechercher le niveau dans un tampon de tableau
-à chaque accès et sépare les champs de génération des données des tableaux.
+Entering a scope saves the cursor, activates a generation slot, and assigns it
+a monotonic identifier. Each array retains its scope state and identifier.
+Leaving the scope invalidates that slot and restores the cursor in a `finally`
+block. Arrays from outer scopes remain valid. A later scope at the same depth
+receives a different identifier, so an old reference cannot become valid again
+when its address is reused. Direct references to `_ScopeState` avoid looking up
+the scope depth in an array buffer on every access and keep generation metadata
+separate from the element data.
 
-Le compteur ne reboucle jamais silencieusement : son épuisement lève une erreur.
-`reset!` remplace la génération racine. `close` retire sa génération en la mettant
-à zéro, puis annule l'adresse du mapping. La finalisation retire toutes les
-générations actives, y compris lors d'un appel explicite à `finalize` en portée imbriquée.
-close et reset! sont interdits à l'intérieur d'une portée imbriquée.
-Les accès aux éléments et aux pointeurs vérifient propriétaire et génération.
-Tout descripteur publié porte un identifiant non nul : l'égalité des générations
-prouve aussi que le mapping est ouvert, sans charger son adresse à chaque accès.
-Les allocations, reset et entrées dans une portée vérifient toujours l'ouverture.
-Les requêtes de forme (`size`, `length`) restent utilisables après invalidation :
-elles lisent seulement les métadonnées du descripteur.
+The generation counter never silently wraps: exhaustion raises an error.
+`reset!` replaces the root generation. `close` invalidates its generation by
+setting it to zero, then clears the mapping address. Finalization invalidates
+all active generations, including explicit `finalize` calls inside nested
+scopes. `close` and `reset!` are forbidden inside nested scopes.
 
-Les conversions d'éléments peuvent exécuter du code utilisateur. `setindex!` et
-`fill!` revérifient donc la validité après conversion, pour empêcher une écriture
-si cette conversion ferme ou réinitialise l'arène. Les pointeurs échappés et la
-mutation directe des champs internes sortent de ce contrat de sécurité.
+Element and pointer access checks both the owner and generation. Every
+published descriptor has a nonzero identifier: generation equality also
+establishes that the mapping is open, without loading its address on every
+access. Allocation, reset, and scope entry always verify that the mapping is
+open. Shape queries such as `size` and `length` remain usable after
+invalidation because they read only descriptor metadata.
 
-## Interface et choix de conception
+Element conversions may run user code. Consequently, `setindex!` and `fill!`
+recheck validity after conversion to prevent writes if a conversion closes or
+resets the arena. Escaped raw pointers and direct mutation of internal fields
+are outside this safety contract.
 
-Le supertype `DenseArray{T,N}` exprime la contiguïté. `IndexLinear()` et les
-méthodes scalaires alimentent les interfaces génériques Julia : indexation
-cartésienne, vues, masques, itération et réductions. Les opérations créant un
-tableau passent par `similar` ou le style de broadcast et utilisent l'arène
-active. Les opérations C/BLAS conservent le descripteur via `cconvert`.
+## Interfaces and design choices
 
-`Base.dataids`, autre interface interne, fournit un identifiant du bloc mémoire
-pour reconnaître les alias et éviter des copies inutiles en broadcasting. Les
-copies contiguës entre GooseArray de même type utilisent `memmove` afin de gérer
-les recouvrements. Un `reshape` conserve propriétaire, adresse et génération.
+The `DenseArray{T,N}` supertype expresses contiguous storage. `IndexLinear()`
+and scalar methods support generic Julia interfaces: Cartesian indexing,
+views, masks, iteration, and reductions. Array-producing operations use
+`similar` or the broadcasting style and allocate from the active arena.
+C and BLAS operations preserve descriptors through `cconvert`.
 
-## Vectorisation des accès vérifiés
+`Base.dataids`, another internal interface, provides a storage identifier for
+alias detection and avoids unnecessary copies in broadcasting. Contiguous
+copies between Goose arrays of the same type use `memmove` to support
+overlapping storage. A `reshape` preserves the owner, address, and generation.
 
-Les écritures via `unsafe_store!` ont une annotation d'alias très générale : le
-compilateur doit envisager qu'elles modifient les métadonnées vérifiées au tour
-suivant. `payload.jl` utilise la catégorie LLVM interne `jtbaa_arraybuf` pour les
-écritures des types scalaires usuels. Les générations sont des champs d'objets
-Julia, distincts des tampons de données. Le compilateur peut alors sortir les
-contrôles d'une boucle dont le corps ne les modifie pas, puis vectoriser.
+## Vectorizing checked element access
 
-La catégorie choisie est la même que celle des tampons `Array`, afin de préserver
-les alias avec `unsafe_wrap(Array, pointer(a), ...)`. Une catégorie privée qui
-déclarerait tous les tampons disjoints serait incorrecte. Les tests incluent des
-boucles avec dépendance entre un GooseArray et un Array enveloppant le même bloc.
-Les appels inconnus ou les mutations de métadonnées restent des obstacles au
-déplacement des contrôles. Aucune annotation ne déclare les générations immuables.
+Writes through `unsafe_store!` carry very general alias metadata: the compiler
+must assume they might modify metadata checked on subsequent iterations.
+`payload.jl` uses Julia's internal LLVM TBAA category `jtbaa_arraybuf` for
+writes of common scalar types. Generations are Julia object fields, separate
+from element buffers. The compiler can therefore hoist repeated checks out of
+loops whose bodies do not modify those checks, then vectorize the loops.
 
-Ce chemin concerne Bool, les entiers natifs de 8 à 128 bits, Float16/32/64, Char,
-ComplexF32 et ComplexF64. Les autres types isbits conservent un stockage générique.
-L'arbre TBAA est un détail interne : l'optimisation est activée sur Julia 1.13.x,
-testée sur 1.13.3, et désactivée au profit du chemin portable pour les autres versions.
-Elle ne fournit pas de promesse de performances identiques pour tous les types.
+This is the same TBAA category used by `Array` buffers, preserving aliasing
+with `unsafe_wrap(Array, pointer(a), ...)`. A private category claiming all
+buffers to be disjoint would be incorrect. Tests include loops with a
+dependency between a Goose array and an `Array` wrapping the same storage.
+Unknown calls and metadata mutations still inhibit hoisting; no annotation
+declares generations immutable.
 
-Les allocations de données ne demandent ni `Vector` ni `Memory` Julia. Ce modèle
-n'élimine ni le GC de Julia ni la compilation JIT. La pile est une région de
-mémoire virtuelle, distincte de la pile native du processeur.
+This path covers `Bool`, native 8–128-bit integers, `Float16`/`Float32`/
+`Float64`, `Char`, `ComplexF32`, and `ComplexF64`. Other `isbits` types use
+generic storage. The TBAA tree is an internal implementation detail: the
+optimization is enabled on Julia 1.13.x (tested on 1.13.3) and falls back to
+the portable path on other versions. Performance is not guaranteed to match
+across all element types.
 
-## Matérialisation sans collecte générique
+Element storage does not require Julia `Vector` or `Memory` allocations. This
+does not eliminate Julia's GC or JIT compilation. The arena is a virtual memory
+region, not the CPU's native call stack.
 
-Pour un résultat dont le type est concret, isbits et de taille positive, map
-alloue la forme exacte une seule fois puis parcourt les indices prouvés valides.
-La boucle ne teste pas les bornes à chaque élément. Elle vérifie le stockage
-avant la lecture, puis après le callback et la conversion, avant toute écriture.
-Les appels purs permettent le déplacement de ces contrôles par le compilateur.
-Les types de résultat inconnus gardent la collecte générique Julia, et la forme
-statique est rétablie sans copie. Le broadcast unaire de même forme partage ce
-chemin ; les autres broadcasts conservent la fusion et l’indexation de Base. Leur résultat
-neuf ne nécessite pas l’analyse d’alias de destination du chemin en place ;
-les types inconnus conservent le repli générique complet.
+## Materializing without generic collection
 
-Le map! unaire public entre tableaux Goose utilise cette même boucle indexée,
-avec min(length(dest), length(src)) itérations, même entre rangs différents.
-Une destination plus longue conserve sa fin. Une boucle vide ne touche aucun
-stockage. Le callback précède le contrôle de la destination et sa conversion,
-comme l'affectation de Base ; la destination est revérifiée après conversion.
-Les alias suivent l'ordre des indices et ne sont pas déclarés indépendants.
+When a result has a concrete, positive-size `isbits` type, `map` allocates its
+exact shape once and iterates over indices known to be valid. The loop does not
+perform a bounds check for every element. It checks storage before reading,
+and again after the callback and conversion, before writing. Pure operations
+allow the compiler to hoist these checks. Unknown result types retain Julia's
+generic collection path; static shape is restored without copying.
+Same-shape unary broadcasting shares this path. Other broadcasts preserve
+Base's fusion and indexing. Their newly allocated result does not need the
+in-place path's destination alias analysis; unknown types retain the complete
+generic fallback.
 
-Les chemins numériques natifs ne concernent que Float32/Float64 : leur
-arithmétique ne peut pas appeler du code utilisateur. Les propriétaires et
-générations sont vérifiés une fois, les indices découlent des dimensions validées
-et GC.@preserve conserve tous les propriétaires pendant les accès bruts.
-Les opérateurs scalaires personnalisés restent dans les chemins génériques.
+The public unary `map!` between Goose arrays uses this indexed loop as well,
+performing `min(length(dest), length(src))` iterations, even across different
+ranks. A longer destination keeps its remaining elements. An empty iteration
+does not access any storage. As with Base assignment, the callback runs before
+the destination check and conversion; validity is rechecked after conversion.
+Aliasing follows index order and is never assumed independent.
 
-## Opérandes partagés et entrées multiples (0.6)
+Native numeric paths are restricted to `Float32` and `Float64`, whose arithmetic
+cannot call user code. Owners and generations are checked once, indices follow
+from validated dimensions, and `GC.@preserve` keeps all owners live during raw
+memory access. Custom scalar operators stay on generic paths.
 
-Un état de portée appartient à une seule arène. Après validation d’un opérande,
-les descripteurs ayant le même état doivent encore présenter le même jeton.
-Une portée distincte garde son contrôle de génération ; une arène distincte
-garde son contrôle de tâche. Cette preuve ne traverse pas un callback.
-Les boucles de map revérifient les sources avant lecture puis la destination
-après le callback et la conversion.
+## Shared operands and multiple inputs
 
-Les tuples d’opérandes sont développés selon leur arité et leurs types,
-jamais leurs longueurs dynamiques ou identités d’arène. Les formes suivent
-zip/Base : longueur minimale des vecteurs, vecteur en cas de rangs différents,
-promotion des formes pour des rangs supérieurs identiques. Le résultat est alloué
-dans l’arène du premier argument à la portée active. Les entrées toutes statiques
-gardent une forme statique ; les autres mélanges donnent un GooseArray.
-Un type de résultat inconnu ou non pris en charge garde la collecte de Base.
+A scope state belongs to exactly one arena. After one operand is validated,
+other descriptors sharing its scope state must still carry the same generation
+token. A different scope retains its own generation check, and a different
+arena retains its task-ownership check. This proof does not survive a callback.
+`map` loops recheck sources before reading and destinations after callbacks and
+conversions.
 
-La réduction globale + numérique utilise un adaptateur privé AbstractVector,
-contenant la fonction, les opérandes et une longueur Int. Son getindex vérifie
-les sources et calcule une valeur ; aucun élément mappé n’est stocké. La réduction
-pairwise/SIMD, les cas vides et init sont traités par Base. Les opérateurs ou init
-personnalisés et les réductions par dimensions gardent une matérialisation suivie
-d’une réduction standard. Les map restent immédiats et sum(map(...)) garde
-son stockage intermédiaire.
+Operand tuples are expanded based on arity and types, never dynamic lengths or
+arena identities. Shapes follow `zip` / Base conventions: minimum vector
+length, vector output for differing ranks, and broadcast-compatible shape
+promotion for matching higher ranks. Results are allocated in the first Goose
+argument's arena, using its active scope. All-static inputs retain a static
+shape; other combinations produce a `GooseArray`. Unknown or unsupported
+result types use Base's generic collection.
 
-Les produits matrice–vecteur réels ont un chemin natif jusqu’à 8 par dimension
-dynamique, ou 16 pour une matrice statique dont les dimensions permettent un
-développement borné. Les dimensions vides gardent les conventions de Base.
-Comme pour mul! de Base, la destination ne doit pas aliaser les entrées.
-axpy!/axpby! acceptent les alias exacts et gardent BLAS au-delà de 2 048 éléments.
-Le stockage reste mmap ; aucune de ces optimisations ne le transforme en tuple
-inline ou en pile native.
+Global numeric `+` reduction uses a private `AbstractVector` adapter containing
+the mapping function, operands, and an `Int` length. Its `getindex` checks the
+sources and computes one value; no mapped elements are stored. Base handles
+pairwise / SIMD reduction, empty inputs, and `init`. Custom operators or `init`
+and reductions along dimensions materialize the mapped result before a standard
+reduction. `map` remains eager, and `sum(map(...))` still uses an intermediate.
+
+Real-valued matrix–vector products use a native path for dynamic dimensions up
+to 8, or up to 16 for a static matrix whose shape permits bounded unrolling.
+Empty dimensions follow Base conventions. As with Base's `mul!`, the
+destination must not alias the inputs. `axpy!` and `axpby!` support exact
+aliasing and use BLAS beyond 2,048 elements. Storage remains `mmap`-backed;
+none of these optimizations turns it into an inline tuple or native stack
+allocation.

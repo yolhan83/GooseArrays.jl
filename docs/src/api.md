@@ -1,6 +1,6 @@
-# Référence API
+# API reference
 
-## Allocation et arène
+## Allocation and arenas
 
 ```@docs
 DataStack
@@ -10,25 +10,25 @@ alloc!
 reset!
 ```
 
-## Types de tableaux
+## Array types
 
 ```@docs
 GooseArray
 ```
 
-`GooseVector`, `GooseMatrix`, `StaticGooseVector` et `StaticGooseMatrix`
-sont des alias pratiques pour les dimensions 1 et 2. `AbstractGooseArray`
-rassemble les deux familles.
+`GooseVector`, `GooseMatrix`, `StaticGooseVector`, and `StaticGooseMatrix`
+are convenient aliases for one- and two-dimensional arrays. `AbstractGooseArray`
+is the common parent type.
 
-## Erreurs et introspection
+## Errors and introspection
 
 ```@docs
 InvalidatedArrayError
 ```
 
-`bytesused(s)` renvoie le nombre d'octets consommés dans l'arène,
-`capacity(s)` sa taille réservée, `available(s)` le nombre d'octets disponibles.
-`close(s)` ferme le mapping et invalide les descripteurs.
+`bytesused(s)` returns the number of arena bytes in use, `capacity(s)` the
+reserved capacity, and `available(s)` the remaining space. `close(s)` unmaps
+the arena and invalidates its array descriptors.
 
-Les méthodes usuelles de `Base` et `LinearAlgebra` sont expliquées dans
-[Démarrage](guide.md) et [Compatibilité](compatibility.md).
+Standard `Base` and `LinearAlgebra` methods are covered in the
+[Getting started](guide.md) and [Compatibility](compatibility.md) pages.

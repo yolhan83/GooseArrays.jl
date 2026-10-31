@@ -1,42 +1,42 @@
-# Couverture par rapport à FixedSizeArrays.jl
+# Compatibility with FixedSizeArrays.jl
 
-Le but est de fournir une interface de tableau Julia étendue avec stockage en
-arène. Ce n'est pas une compatibilité de chaque constructeur ou extension du
-package d'origine : un propriétaire mémoire explicite reste nécessaire.
+The goal is to offer a broad Julia array interface with arena-backed storage,
+not a drop-in replacement for every constructor or extension in the original
+package. An explicit arena owner is still required.
 
-| Fonctionnalité | GooseArrays 0.1 |
+| Feature | GooseArrays 0.1 |
 | --- | --- |
-| Taille fixe, éléments modifiables, rang quelconque | Oui, rang 0 inclus |
-| Longueurs dynamiques absentes du type | Oui pour GooseArray ; formes dans le type pour StaticGooseArray |
-| Constructeurs `undef`, tuples et dimensions séparées | Oui, avec arène explicite |
-| Copie et conversion d'un `AbstractArray` | Oui, indices commençant à 1 |
-| Alias vecteur / matrice | Oui |
-| Indexation linéaire / cartésienne / tranches / masques | Interface générique Julia |
-| `size`, `length`, `axes`, `strides`, `elsize`, `isassigned` | Oui |
-| Itération, destructuration, réductions, `map` | Oui ; map unaire conserve les formes statiques |
-| map! unaire ou multi-entrées entre tableaux Goose | Chemin indexé ; longueur minimale, alias et conversions comme Base |
-| map à plusieurs entrées Goose | Résultat typé dans la première arène ; statique si toutes les entrées le sont, repli Base pour les types inconnus |
-| mapreduce à plusieurs entrées Goose | Global + numérique natif sans résultat intermédiaire ; dims/op/init personnalisés par repli |
-| mul!(y,A,x), axpy!, axpby! | Noyaux natifs réels courts, BLAS au-delà et repli pour les autres scalaires |
-| `similar`, `copy`, `copy!`, `copyto!` | Oui, sans redimensionnement |
-| Broadcast en place et hors place, fusion | Oui ; résultat dans une arène Goose |
-| Broadcast de rang 0 | Renvoie un scalaire comme Base |
-| `reshape`, dimensions inférées `:`, `vec`, vues | Oui, partage du stockage |
-| Pointeurs, appels C et BLAS, `mul!`, `dot` | Oui ; limites de durée de vie des pointeurs bruts |
-| `rand!` | Fonctionnement générique, sans dépendance au package Random |
-| Objets contenant des références GC | Refusés ; stockage brut non tracé |
-| `Union` isbits, types de taille zéro | Refusés dans cette version |
-| Dimensions statiques explicites | StaticGooseArray via alias ou Val(tuple) ; pas de dépendance Static.jl |
-| Produits de matrices / vecteurs statiques | Extension optionnelle LinearAlgebra ; forme du résultat conservée |
-| Conversions entre formes statiques et dynamiques | Partage du stockage, sans copie, avec durée de vie d'origine |
-| Backend `Vector` / `Memory` configurable | Remplacé par le mapping de DataStack |
-| `similar(Type, dims)` sans propriétaire | Pas d'arène implicite globale |
-| `wrap` d'un `Vector` existant sans copie | Exclu : le stockage doit appartenir à l'arène |
-| `collect_as`, extensions StaticArrayInterface | Pas de dépendances ni d'extensions dédiées |
-| Adapt, GPU, MPI | Pas d'extensions dédiées ni de validation de compatibilité |
-| `push!`, `resize!` | Exclus, comme attendu pour une taille fixe |
+| Fixed-size mutable elements, arbitrary rank | Yes, including rank 0 |
+| Dynamic lengths not encoded in the type | Yes for `GooseArray`; `StaticGooseArray` encodes its shape |
+| `undef`, tuple, and separate-dimension constructors | Yes, with an explicit arena |
+| Copy or convert an `AbstractArray` | Yes, with 1-based indices |
+| Vector and matrix aliases | Yes |
+| Linear / Cartesian / slice / mask indexing | Generic Julia interface |
+| `size`, `length`, `axes`, `strides`, `elsize`, `isassigned` | Yes |
+| Iteration, destructuring, reductions, `map` | Yes; unary `map` preserves static shapes |
+| Unary and multi-input `map!` between Goose arrays | Indexed path; minimum length, aliasing, and conversion semantics as in Base |
+| Multi-input `map` with Goose arrays | Typed result in the first arena; static if all inputs are static, Base fallback for unknown types |
+| Multi-input `mapreduce` with Goose arrays | Native global numeric `+` reduction without an intermediate; fallback for custom `dims` / operators / `init` |
+| `mul!(y,A,x)`, `axpy!`, `axpby!` | Short native real-valued kernels, BLAS for larger inputs, fallback for other scalar types |
+| `similar`, `copy`, `copy!`, `copyto!` | Yes, without resizing |
+| In-place and out-of-place broadcasting, fusion | Yes; results allocated in a Goose arena |
+| Rank-0 broadcasting | Returns a scalar, as in Base |
+| `reshape`, inferred `:` dimensions, `vec`, views | Yes, sharing storage |
+| Pointers, C and BLAS calls, `mul!`, `dot` | Yes; raw pointer lifetime restrictions apply |
+| `rand!` | Generic implementation, without a direct `Random` package dependency |
+| Objects with GC-tracked references | Rejected; raw storage is not GC-scanned |
+| `isbits Union` and zero-sized types | Rejected in this version |
+| Explicit static dimensions | `StaticGooseArray` through aliases or `Val(tuple)`; no Static.jl dependency |
+| Static matrix and vector products | Optional `LinearAlgebra` extension; preserves result shape |
+| Conversion between static and dynamic shapes | Shared storage, no copy; preserves the original lifetime |
+| Configurable `Vector` / `Memory` backend | Replaced with `DataStack`'s memory mapping |
+| Ownerless `similar(Type, dims)` | No implicit global arena |
+| Zero-copy wrapping of an existing `Vector` | Unsupported; the arena must own the storage |
+| `collect_as`, StaticArrayInterface extensions | No dedicated dependencies or extensions |
+| Adapt, GPU, MPI | No dedicated extensions or validated compatibility |
+| `push!`, `resize!` | Unsupported, as expected for fixed-size arrays |
 
-La couverture explicitement testée est dans `test/runtests.jl` ; l'héritage des
-algorithmes génériques ne constitue pas une validation de tous les packages de
-l'écosystème. Le CI fourni permet d'élargir la validation à macOS/Linux et aux
-versions Julia prises en charge. Il n'a pas été exécuté à distance dans cette livraison.
+Explicit test coverage is in `test/runtests.jl`; inheriting generic algorithms
+does not imply compatibility with every package in the Julia ecosystem. The
+provided CI is intended to validate the supported Julia versions on macOS and
+Linux. The original release archive was prepared without running remote CI.

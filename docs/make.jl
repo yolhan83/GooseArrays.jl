@@ -7,12 +7,12 @@ makedocs(
     format = Documenter.HTML(; prettyurls = get(ENV, "CI", "false") == "true"),
     checkdocs = :none,
     pages = [
-        "Accueil" => "index.md",
-        "Démarrage" => "guide.md",
+        "Home" => "index.md",
+        "Getting started" => "guide.md",
         "API" => "api.md",
         "Architecture" => "architecture.md",
-        "Compatibilité" => "compatibility.md",
-        "Performances" => "performance.md",
-        "Contribuer et CI" => "contributing.md",
+        "Compatibility" => "compatibility.md",
+        "Performance" => "performance.md",
+        "Contributing and CI" => "contributing.md",
     ],
 )

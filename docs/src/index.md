@@ -1,29 +1,31 @@
 # GooseArrays.jl
 
-GooseArrays.jl reprend l'idée de tableaux temporaires à durée de vie contrôlée,
-dans l'esprit de **Goose**, et l'intègre à l'interface `AbstractArray` de Julia.
-Les éléments sont stockés dans une **arène mmap** préallouée, sans allocation GC
-pour chaque tampon : les formes peuvent être dynamiques (`GooseArray`) ou figées
-dans les types (`StaticGooseArray`). Un tableau devient invalide lorsqu'on quitte
-sa portée ou lorsque l'arène est réinitialisée ou fermée.
+Inspired by **Goose**, GooseArrays.jl brings temporary arrays with controlled
+lifetimes to Julia's `AbstractArray` interface. Elements live in a preallocated
+**`mmap` arena**, without requiring a separate GC allocation for each data
+buffer. Shapes can be dynamic (`GooseArray`) or encoded in the type
+(`StaticGooseArray`). Arrays become invalid when their scope ends or their arena
+is reset or closed.
 
-!!! warning "Ce n'est pas la pile native"
-    Le nom `DataStack` décrit une discipline d'allocation et de durée de vie.
-    Ni les données ni les descripteurs ne sont garantis sur la stack native.
-    Les tableaux peuvent allouer un descripteur sur le heap s'ils s'échappent.
+!!! warning "Not the native stack"
+    `DataStack` describes an allocation and lifetime discipline. Neither the
+    array data nor its descriptors are guaranteed to reside on the native call
+    stack. Escaping array descriptors may still allocate on the GC heap.
 
-Pour démarrer, voir [Démarrage](guide.md), puis [API](api.md).
-Les conditions de mesures sont dans [Performances](performance.md).
+Start with [Getting started](guide.md) and the [API reference](api.md).
+Benchmark methodology is described in [Performance](performance.md).
 
-## Fonctionnement en bref
+## How it works
 
-- Une arène est créée avec `DataStack` ou `with_datastack`.
-- `alloc!` ou les constructeurs `GooseArray`/`StaticGooseArray` placent des données
-  contiguës dans cette arène, sans redimensionnement ultérieur.
-- `with_scope` réserve une portée temporaire et restaure le curseur à la sortie.
-- `reset!` et `close` invalident les tableaux concernés ; les accès invalides lèvent
-  `InvalidatedArrayError`, y compris sous `@inbounds`.
-- Une arène est propre à la `Task` qui l'a créée ; elle ne se partage pas entre tâches.
+- Create an arena with `DataStack` or `with_datastack`.
+- Use `alloc!` or the `GooseArray` / `StaticGooseArray` constructors to allocate
+  contiguous, non-resizable arrays from the arena.
+- Use `with_scope` for temporary allocations; the arena cursor is restored when
+  the scope exits.
+- `reset!` and `close` invalidate affected arrays. Invalid access raises
+  `InvalidatedArrayError`, even under `@inbounds`.
+- Each arena belongs to the Julia `Task` that created it; arenas cannot be
+  shared across tasks.
 
-Seuls les éléments `isbits` de taille strictement positive sont acceptés.
-Backends actuellement pris en charge : Linux, macOS et FreeBSD.
+Only positive-size `isbits` element types are supported.
+Currently supported backends: Linux, macOS, and FreeBSD.

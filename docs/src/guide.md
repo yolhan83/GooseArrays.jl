@@ -1,15 +1,16 @@
-# Démarrage
+# Getting started
 
 ## Installation
 
-Pour utiliser la version du dépôt avant son éventuel enregistrement dans le registre Julia :
+To install directly from the repository before a possible Julia General
+registry release:
 
 ```julia
 using Pkg
 Pkg.add(url = "https://github.com/yolhan83/GooseArrays.jl")
 ```
 
-## Tableaux dynamiques et statiques
+## Dynamic and static arrays
 
 ```@example start
 using GooseArrays, LinearAlgebra
@@ -19,23 +20,23 @@ result = with_datastack(1 << 20) do s
     fill!(x, 2.0)
     y = StaticGooseVector{Float64,4}(s, undef)
     y .= 2 .* x .+ 1
-    (sum(y), Array(y))  # copie indépendante de l'arène
+    (sum(y), Array(y))  # independent copy outside the arena
 end
 result
 ```
 
-`GooseArray{T,N}` garde les dimensions **hors du type** : utile pour des longueurs
-choisies à l'exécution. `StaticGooseArray{T,N,S}` intègre la forme dans son type,
-au prix d'une spécialisation du code par forme.
+`GooseArray{T,N}` stores dimensions **outside the type**, making it suitable
+for lengths chosen at runtime. `StaticGooseArray{T,N,S}` encodes the shape in
+its type, trading additional specialization for shape-aware code.
 
-## Portées et invalidation
+## Scopes and invalidation
 
 ```@example start
 with_datastack(4096) do s
     outer = GooseArray(s, [1, 2, 3])
     escaped = with_scope(s) do scope
         a = GooseArray(scope, [4, 5, 6])
-        copy(a)  # copie dans la même arène, invalidée en sortie
+        copy(a)  # copy within the same arena; invalid after scope exit
     end
     (sum(outer), try
         sum(escaped)
@@ -45,16 +46,17 @@ with_datastack(4096) do s
 end
 ```
 
-Pour faire survivre les données au-delà de `with_scope` ou de `with_datastack`,
-utiliser `Array(a)` **avant la sortie de la portée**. Ne jamais conserver ni
-réutiliser un pointeur brut vers une arène après fermeture ou réinitialisation.
+To retain data beyond `with_scope` or `with_datastack`, call `Array(a)`
+**before the scope ends**. Never retain or reuse raw pointers into an arena
+after it has been closed or reset.
 
-## Réductions et algèbre linéaire
+## Reductions and linear algebra
 
-`map`, `map!`, les broadcasts et les réductions usuelles travaillent avec les
-tableaux Goose. `map` hors place crée des résultats dans l'arène du premier
-tableau Goose, et `mapreduce` numérique peut éviter toute matérialisation.
-`LinearAlgebra` fournit entre autres `mul!`, `dot`, `axpy!`, `axpby!` et les
-produits statiques compatibles.
+`map`, `map!`, broadcasting, and standard reductions work with Goose arrays.
+Out-of-place `map` creates its result in the first Goose operand's arena;
+numeric `mapreduce` can avoid materializing an intermediate array.
+`LinearAlgebra` also provides `mul!`, `dot`, `axpy!`, `axpby!`, and compatible
+static-shape products.
 
-Les exemples exécutables sont aussi sous [`examples/`](https://github.com/yolhan83/GooseArrays.jl/tree/main/examples).
+Runnable examples are available in
+[`examples/`](https://github.com/yolhan83/GooseArrays.jl/tree/main/examples).

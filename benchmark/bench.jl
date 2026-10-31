@@ -1,5 +1,5 @@
-# Lanceur autonome : julia --startup-file=no benchmark/bench.jl [--full] [--out DIR]
-# Tout le pilotage et les deux bancs de mesure sont en Julia.
+# Standalone runner: julia --startup-file=no benchmark/bench.jl [--full] [--out DIR]
+# The orchestration and both benchmark suites are implemented entirely in Julia.
 import Pkg
 
 const ROOT = normpath(joinpath(@__DIR__, ".."))
@@ -16,14 +16,14 @@ function options(args)
         elseif arg == "--quick"
             mode = :quick
         elseif arg == "--out"
-            i < length(args) || error("--out demande un répertoire\n", HELP)
+            i < length(args) || error("--out requires a directory\n", HELP)
             i += 1
             output = abspath(args[i])
         elseif arg in ("--help", "-h")
             println(HELP)
             exit(0)
         else
-            error("Option inconnue: $arg\n$HELP")
+            error("Unknown option: $arg\n$HELP")
         end
         i += 1
     end
@@ -53,8 +53,8 @@ end
 
 for script in ("run.jl", "staged.jl")
     command = `$(Base.julia_cmd()) --startup-file=no --threads=1 --project=$(joinpath(ROOT, "benchmark")) $(joinpath(@__DIR__, script))`
-    println("\n[GooseArrays] $mode — $script — résultats : $output")
+    println("\n[GooseArrays] $mode — $script — results: $output")
     flush(stdout)
     run(addenv(command, env))
 end
-println("\nTerminé : ", joinpath(output, "benchmarks.csv"), " et ", joinpath(output, "staged.csv"))
+println("\nFinished: ", joinpath(output, "benchmarks.csv"), " and ", joinpath(output, "staged.csv"))
