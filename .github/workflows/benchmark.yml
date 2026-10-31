@@ -1,0 +1,39 @@
+name: Benchmark PR
+
+on:
+  pull_request:
+    types: [labeled]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'Numéro de PR à benchmarker'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    if: github.event_name == 'workflow_dispatch' || github.event.label.name == 'benchmark'
+    name: Benchmark rapide de la PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ format('refs/pull/{0}/head', github.event.pull_request.number || inputs.pr) }}
+          persist-credentials: false
+      - uses: julia-actions/setup-julia@v3
+        with:
+          version: '1'
+      - uses: julia-actions/cache@v3
+      - name: Benchmark (2 campagnes Julia)
+        run: julia --startup-file=no benchmark/bench.jl --out benchmark/results
+      - name: Upload CSV and environment
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: goose-benchmark-pr-${{ github.event.pull_request.number || inputs.pr }}
+          path: benchmark/results/
+          if-no-files-found: warn

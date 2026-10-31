@@ -1,0 +1,21 @@
+name = "GooseArrays"
+uuid = "da16e47e-db36-4e0b-92a5-16ad695ee88d"
+version = "0.1.0"
+
+[compat]
+julia = "1.10"
+LinearAlgebra = "1"
+
+[weakdeps]
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+
+[extensions]
+GooseArraysLinearAlgebraExt = "LinearAlgebra"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+
+[targets]
+test = ["Test", "LinearAlgebra", "Random"]

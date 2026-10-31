@@ -1,0 +1,9 @@
+GooseArrays=0.6.0
+Julia=1.13.3
+CPU=Apple M5 Max
+BLAS=LBTConfig([ILP64] libopenblas64_.0.3.30.dylib)
+threads=1, BLAS=1
+seconds=0.25, samples=3000
+lengths=2,3,4,8,16,64,1000,10000,100000
+StaticGoose max=100000
+sides=2,3,4,8,16,64,256

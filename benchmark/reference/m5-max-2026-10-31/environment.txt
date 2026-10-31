@@ -1,0 +1,11 @@
+GooseArrays: 0.6.0
+Julia: 1.13.3; kernel: Darwin; architecture: aarch64
+CPU: Apple M5 Max
+Julia threads: 1; BLAS threads: 1
+FixedSizeArrays: 1.5.1
+StaticArrays: 1.9.24
+BenchmarkTools: 1.8.0
+Seconds per case: 0.25; max samples: 3000
+Lengths: 2,3,4,8,16,32,64,100,1000,10000,100000; StaticArrays max: 1000
+Square matrix sides: 2,3,4,8,16,64,256
+BLAS: LBTConfig([ILP64] libopenblas64_.0.3.30.dylib)

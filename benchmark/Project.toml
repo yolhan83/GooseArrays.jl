@@ -1,0 +1,16 @@
+[deps]
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+FixedSizeArrays = "3821ddf9-e5b5-40d5-8e25-6813ab96b5e2"
+GooseArrays = "da16e47e-db36-4e0b-92a5-16ad695ee88d"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+
+[sources]
+GooseArrays = {path = ".."}
+
+[compat]
+BenchmarkTools = "1"
+FixedSizeArrays = "1.5"
+StaticArrays = "1"
+julia = "1.10"

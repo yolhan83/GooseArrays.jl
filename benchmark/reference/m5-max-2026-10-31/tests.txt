@@ -1,0 +1,82 @@
+6030 assertions passed via Pkg.test(; julia_args=["--check-bounds=yes"])
+
+     Testing GooseArrays
+      Status `/private/var/folders/px/4l1mqd354pbdzzdp94rgc40h0000gn/T/jl_WZhyzq/Project.toml`
+  [da16e47e] GooseArrays v0.6.0 `~/Documents/Codex/2026-10-31/cont/work/GooseArrays-three-stage`
+  [37e2e46d] LinearAlgebra v1.13.0
+  [9a3f8284] Random v1.11.0
+  [8dfed614] Test v1.11.0
+      Status `/private/var/folders/px/4l1mqd354pbdzzdp94rgc40h0000gn/T/jl_WZhyzq/Manifest.toml`
+  [da16e47e] GooseArrays v0.6.0 `~/Documents/Codex/2026-10-31/cont/work/GooseArrays-three-stage`
+  [56f22d72] Artifacts v1.11.0
+  [2a0f44e3] Base64 v1.11.0
+  [b77e0a4c] InteractiveUtils v1.11.0
+  [ac6e5ff7] JuliaSyntaxHighlighting v1.12.0
+  [8f399da3] Libdl v1.11.0
+  [37e2e46d] LinearAlgebra v1.13.0
+  [56ddb016] Logging v1.11.0
+  [d6f4376e] Markdown v1.11.0
+  [9a3f8284] Random v1.11.0
+  [ea8e919c] SHA v1.0.0
+  [9e88b42a] Serialization v1.11.0
+  [f489334b] StyledStrings v1.11.0
+  [8dfed614] Test v1.11.0
+  [e66e0078] CompilerSupportLibraries_jll v1.5.5+2
+  [4536629a] OpenBLAS_jll v0.3.30+0
+  [8e850b90] libblastrampoline_jll v5.15.0+0
+Precompiling for configuration --code-coverage=none --color=no --warn-overwrite=yes --depwarn=yes --inline=yes --startup-file=no --track-allocation=none --check-bounds=yes
+   0.2 s  ✓ GooseArrays
+   0.5 s  ✓ GooseArrays → GooseArraysLinearAlgebraExt
+  2 dependencies successfully precompiled in 1 seconds. 9 already precompiled.
+     Testing Running tests...
+Test Summary:                                             | Pass  Total  Time
+optimized scalar stores preserve values and array aliases |   87     87  1.1s
+Test Summary:                                    | Pass  Total  Time
+metadata mutation prevents unsafe check hoisting |   19     19  0.2s
+Test Summary:                              | Pass  Total  Time
+arena setup and fixed-size array interface |   43     43  0.3s
+Test Summary:                                              | Pass  Total  Time
+allocation validation, alignment and transactional failure |   25     25  0.1s
+Test Summary:                                                      | Pass  Total  Time
+nested scopes, stale handles, exception cleanup and Task ownership |   23     23  0.1s
+Test Summary:                                                 | Pass  Total  Time
+copying, reshape, views, broadcast, random and linear algebra |   46     46  1.5s
+Test Summary:        | Pass  Total  Time
+method compatibility |    1      1  0.1s
+Test Summary:                                                | Pass  Total  Time
+zero GC allocations after warmup (typed nonescaping kernels) |   14     14  0.1s
+Test Summary:                                         | Pass  Total  Time
+runtime shapes do not multiply type or MethodInstance | 1053   1053  0.1s
+Test Summary:                                        | Pass  Total  Time
+StaticGooseArray constructors, shape and conversions |   37     37  0.3s
+Test Summary:                                      | Pass  Total  Time
+static operations and mixed array interoperability |   40     40  0.7s
+Test Summary:                                   | Pass  Total  Time
+static lifetime checks, aliases and allocations |   23     23  0.4s
+Test Summary:                                                    | Pass  Total  Time
+static shapes intentionally specialize, values and arenas do not |   57     57  0.2s
+Test Summary:                                                         | Pass  Total  Time
+indexed map and broadcast preserve values, shapes and callback safety |  218    218  1.7s
+Test Summary:                                                             | Pass  Total  Time
+real small matrix products and dot preserve numeric and lifetime behavior |  989    989  4.4s
+Test Summary:                                      | Pass  Total  Time
+optimized dynamic maps do not specialize by length |   38     38  0.0s
+Test Summary:                                                                 | Pass  Total  Time
+retired generations prove mapping invalidity, including explicit finalization |   85     85  0.2s
+Test Summary:                                    | Pass  Total  Time
+public unary map! matches indexed Base semantics |  154    154  0.8s
+Test Summary:                                     | Pass  Total  Time
+public map! has no length or arena specialization |   57     57  0.1s
+Test Summary:                                                 | Pass  Total  Time
+batched checks preserve independent tokens, scopes and owners |   50     50  0.5s
+Test Summary:                                | Pass  Total  Time
+native real matrix-vector and scaled updates | 1781   1781  5.1s
+Test Summary:                                              | Pass  Total  Time
+matrix-vector independent invalidation and empty semantics |   10     10  0.1s
+Test Summary:                                           | Pass  Total   Time
+multi-input map shapes, promotion, aliases and fallback |  708    708  12.2s
+Test Summary:                                            | Pass  Total  Time
+multi callbacks, invalidation and eager custom operators |   67     67  0.7s
+Test Summary:                                                                  | Pass  Total  Time
+multi-input numeric kernels allocate no GC and preserve runtime specialization |  405    405  2.8s
+     Testing GooseArrays tests passed

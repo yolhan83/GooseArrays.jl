@@ -1,0 +1,10 @@
+[deps]
+Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
+GooseArrays = "da16e47e-db36-4e0b-92a5-16ad695ee88d"
+
+[sources]
+GooseArrays = {path = ".."}
+
+[compat]
+Documenter = "1"
+julia = "1.10"
