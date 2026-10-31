@@ -128,6 +128,13 @@ end
                     fill!(A,T(NaN));fill!(B,T(NaN));fill!(C,T(NaN))
                     mul!(C,A,B,false,false)
                     @test all(iszero,C)
+                    # The zero-alpha path must not read NaNs from A or B,
+                    # including for sizes handled by the BLAS fallback.
+                    fill!(C,T(3))
+                    @test mul!(C,A,B,false,true) === C
+                    @test all(==(T(3)),C)
+                    @test mul!(C,A,B,false,T(2)) === C
+                    @test all(==(T(6)),C)
                 end
             end
             for n in (0,1,2,3,16,1000,2048,2049,10000)

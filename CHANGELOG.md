@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.1 — 2026-10-31
+
+Correctif de compatibilité Linux/Julia 1.10 : `mul!` applique explicitement
+`alpha == 0` sans lire les opérandes (y compris dans le chemin BLAS), et
+les tests d'allocations forcent la spécialisation de leur mesure variadique.
+La couverture des valeurs `NaN` et des facteurs d'échelle est renforcée.
+
 ## 0.1.0 — 2026-10-31
 
 Première version publique. Elle reprend l'implémentation finale du prototype :

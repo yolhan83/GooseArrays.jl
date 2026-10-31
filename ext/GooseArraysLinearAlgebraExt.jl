@@ -99,11 +99,26 @@ end
         alpha::Union{Bool,T}, beta::Union{Bool,T}) where {T<:ArenaReal}
     m,k = size(A)
     k2,n = size(B)
+    k == k2 && size(C) == (m,n) || throw(DimensionMismatch("matrix dimensions must match"))
+    GooseArrays._checklive(A,B,C)
+
+    # With alpha == 0, A and B must not be read: in particular, NaNs in
+    # either input must not contaminate C. BLAS backends do not all take the
+    # same shortcut, so handle the scaling here even for large matrices.
+    if iszero(alpha)
+        if iszero(beta)
+            fill!(C, zero(T))
+        elseif !isone(beta)
+            GC.@preserve C begin
+                @inbounds for i in 1:length(C)
+                    GooseArrays._store_payload!(C.ptr, beta * unsafe_load(C.ptr,i), i)
+                end
+            end
+        end
+        return C
+    end
+
     if 0 < m <= 4 && 0 < k <= 4 && 0 < n <= 4
-        GooseArrays._checklive(A)
-        GooseArrays._checklive(B)
-        GooseArrays._checklive(C)
-        k == k2 && size(C) == (m,n) || throw(DimensionMismatch("matrix dimensions must match"))
         GC.@preserve A B C begin
             for j in 1:n, i in 1:m
                 acc = zero(T)
@@ -121,9 +136,6 @@ end
         end
         return C
     end
-    GooseArrays._checklive(A)
-    GooseArrays._checklive(B)
-    GooseArrays._checklive(C)
     BLAS.gemm!('N','N',alpha,A,B,beta,C)
 end
 

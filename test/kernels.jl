@@ -44,7 +44,10 @@ end
     end
 end
 
-@noinline function measure_bytes(f, args...)
+# Force specialization on the callee and vararg arity. Julia (notably 1.10)
+# may otherwise allocate a small varargs/dispatch wrapper in the measuring
+# function, even when the measured kernel itself is allocation-free.
+@noinline function measure_bytes(f::F, args::Vararg{Any,N}) where {F,N}
     f(args...)
     @allocated f(args...)
 end

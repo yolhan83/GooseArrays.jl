@@ -238,6 +238,8 @@ end
 end
 
 @testset "zero GC allocations after warmup (typed nonescaping kernels)" begin
+    # Ensure the allocation-measurement wrapper itself is allocation-free.
+    @test measure_bytes(identity, 123) == 0
     with_datastack(1 << 24) do s
         a = alloc!(s, Float64, 1000)
         b = alloc!(s, Float64, 1000)
