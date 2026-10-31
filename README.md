@@ -37,6 +37,7 @@ allocation in bytes**. `sum(map(f, x))` includes consuming the result and, for
 Goose arrays, leaving the scope. Arena initialization is excluded. `—` means
 **not measured**.
 
+<!-- BEGIN GENERATED BENCHMARK: readme -->
 | n | Operation | Vector | FixedSizeArray | GooseVector | StaticGooseVector | MVector |
 | ---: | --- | ---: | ---: | ---: | ---: | ---: |
 | 4 | `sum(map(f,x))` | 8.6 / 96 | 9.1 / 64 | 14.2 / 0 | 13.9 / 0 | 1.8 / 0 |
@@ -45,6 +46,7 @@ Goose arrays, leaving the scope. Arena initialization is excluded. `—` means
 | 10,000 | `sum(map(f,x))` | 2259.2 / 81984 | 2263.9 / 81952 | 1641.7 / 0 | 1620.8 / 0 | — |
 | 64 | `mapreduce(abs2,+,x)` | 7.0 / 0 | 7.0 / 0 | 7.4 / 0 | 6.8 / 0 | 9.0 / 0 |
 | 1,000 | `sum(f.(x))` | 196.4 / 8256 | 194.4 / 8224 | 156.2 / 0 | 153.4 / 0 | 590.0 / 0 |
+<!-- END GENERATED BENCHMARK: readme -->
 
 **Zero GC bytes does not mean zero arena bytes.** Performance depends on the
 operation and machine; small `MVector` instances can be faster.
@@ -53,6 +55,12 @@ operation and machine; small `MVector` instances can be faster.
 
 ```sh
 julia --startup-file=no benchmark/bench.jl
+```
+
+**Update the benchmark tables from the tracked CSV files:**
+
+```sh
+julia --startup-file=no benchmark/update_tables.jl
 ```
 
 Full **[documentation: getting started, API, safety, compatibility, benchmarks, and
